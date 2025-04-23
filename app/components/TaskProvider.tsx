@@ -18,7 +18,7 @@ interface TaskProviderProps {
 export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>([
     {
-      title: "Integration API",
+      title: "Integration API With Api another",
       description:
         "Connect an existing API to a third-party database using secure methods and handle data exchange efficiently.",
       tags: ["Web", "Python", "API"],
@@ -45,7 +45,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
       starred: false,
     },
     {
-      title: "Data Handling",
+      title: "Data Handling Data Synchronization",
       description:
         "Integrate a web API with a third-party database using secure methods, focusing on seamless data exchange and data integrity.",
       tags: ["Web", "Python", "Security"],
@@ -56,15 +56,9 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   ]);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [newTaskData, setNewTaskData] = useState({
-    title: "",
-    description: "",
-    tags: "",
-  });
 
-  const addTask = ({ title, description, tags }: { title: string; description: string; tags: string }) => {
-    const tagArray = tags.split(",").map((tag) => tag.trim()).filter((tag) => tag);
-    const tagColors = tagArray.map((_, i) => {
+  const addTask = ({ title, description, tags, priority }: { title: string; description: string; tags: string[]; priority: string }) => {
+    const tagColors = tags.map((_, i) => {
       const colors = ["bg-green-500", "bg-blue-500", "bg-red-500", "bg-yellow-500"];
       return colors[i % colors.length];
     });
@@ -72,14 +66,13 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     const newTask: Task = {
       title: title || "Untitled Task",
       description: description || "No description",
-      tags: tagArray.length ? tagArray : ["General"],
+      tags: tags.length ? tags : ["General"],
       tagColors,
-      priority: "Medium",
+      priority: priority || "Medium",
       starred: false,
     };
 
     setTasks((prev) => [...prev, newTask]);
-    setNewTaskData({ title: "", description: "", tags: "" });
   };
 
   const deleteTask = (index: number) => {
@@ -90,11 +83,25 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     setTasks([]);
   };
 
-  const editTask = (index: number, title: string, description: string) => {
+  const editTask = (index: number, title: string, description: string, tags: string[], priority: string) => {
     setTasks((prev) =>
-      prev.map((task, i) =>
-        i === index ? { ...task, title: title || task.title, description: description || task.description } : task
-      )
+      prev.map((task, i) => {
+        if (i === index) {
+          const tagColors = tags.map((_, idx) => {
+            const colors = ["bg-green-500", "bg-blue-500", "bg-red-500", "bg-yellow-500"];
+            return colors[idx % colors.length];
+          });
+          return {
+            ...task,
+            title: title || task.title,
+            description: description || task.description,
+            tags: tags.length ? tags : task.tags,
+            tagColors,
+            priority: priority || task.priority,
+          };
+        }
+        return task;
+      })
     );
   };
 
