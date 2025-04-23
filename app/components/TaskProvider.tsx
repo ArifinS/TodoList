@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { TaskContext } from "./TaskContext";
-
+import { Trash2Icon } from '@lusid/icon';
 interface Task {
   title: string;
   description: string;
