@@ -339,7 +339,7 @@ const Tasks = () => {
                             <span className="cursor-default">{task.description}</span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-[#2D333F] text-white border-gray-600">
-                            <p>{task.description}</p>
+                          <p className="" style={{ width: '400px' }}>{task.description}</p>
                           </TooltipContent>
                         </Tooltip>
                       </td>
@@ -504,7 +504,7 @@ const Tasks = () => {
 
           {/* View Task Details Dialog */}
           <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-            <DialogContent className="bg-gradient-to-br from-[#1D212B] to-[#2A2F3B] text-white rounded-2xl shadow-2xl p-8 max-w-md mx-auto border border-gray-700/50">
+            <DialogContent className="text-center bg-gradient-to-br from-[#1D212B] to-[#2A2F3B] text-white rounded-2xl shadow-2xl p-8 max-w-md mx-auto border border-gray-700/50">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold tracking-tight text-white text-center">
                   Task Details
@@ -516,25 +516,21 @@ const Tasks = () => {
               {viewingIndex !== null && tasks[viewingIndex] && (
                 <div className="space-y-6 mt-6">
                   <div>
-                    <label className="block mb-1 text-sm font-medium text-gray-300">Title</label>
                     <p className="w-full py-2.5 rounded-lg text-white">
                       {tasks[viewingIndex].title}
                     </p>
                   </div>
                   <div>
-                    <label className="block mb-1 text-sm font-medium text-gray-300">Description</label>
                     <p className="w-full py-2.5 rounded-lg text-white">
                       {tasks[viewingIndex].description}
                     </p>
                   </div>
                   <div>
-                    <label className="block mb-1 text-sm font-medium text-gray-300">Tags</label>
-                    <p className="w-full py-2.5 rounded-lg text-white">
+                    <p className="w-full py-2.5 rounded-lg bg-gray-700 text-white">
                       {tasks[viewingIndex].tags.join(", ")}
                     </p>
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-300">Priority</label>
                     <span
                       className={cn(
                         "px-4 py-2 rounded-lg text-white",
@@ -547,7 +543,7 @@ const Tasks = () => {
                     </span>
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-300">Date Range</label>
+                    {/* <label className="block mb-2 text-sm font-medium text-gray-300">Date Range</label>
                     <div className="flex items-center space-x-3">
                       <p className="flex-1 px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600">
                         {tasks[viewingIndex].dateRange?.from
@@ -560,15 +556,8 @@ const Tasks = () => {
                           ? format(tasks[viewingIndex].dateRange.to, "LLL dd, y")
                           : "No end date"}
                       </p>
-                    </div>
+                    </div> */}
                   </div>
-                  <button
-                    type="button"
-                    className="w-full bg-gradient-to-r from-gray-500 to-gray-600 px-4 py-3 rounded-lg text-white font-semibold hover:from-gray-600 hover:to-gray-700 focus:ring-4 focus:ring-gray-500/30 transition-all duration-300 cursor-pointer"
-                    onClick={() => setViewDialogOpen(false)}
-                  >
-                    Close
-                  </button>
                 </div>
               )}
             </DialogContent>
