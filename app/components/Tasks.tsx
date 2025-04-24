@@ -77,47 +77,46 @@ function DatePickerWithRange({
       onChange(newDate);
     }
   };
-
   return (
     <div className={cn("grid gap-2", className)}>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            id="date"
-            variant={"outline"}
-            className={cn(
-              "w-[300px]justify-start text-left font-normal bg-[#2D333F] text-white border border-transparent hover:bg-gray-700 hover:text-color-700 transition-colors duration-300",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
-                <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
-                </>
-              ) : (
-                format(date.from, "LLL dd, y")
-              )
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          id="date"
+          variant={"outline"}
+          className={cn(
+            "w-[300px]justify-start text-left font-normal bg-[#2D333F] text-white border border-transparent hover:bg-gray-700 hover:text-color-700 transition-colors duration-300",
+            !date && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date?.from ? (
+            date.to ? (
+              <>
+                {format(date.from, "LLL dd, y")} -{" "}
+                {format(date.to, "LLL dd, y")}
+              </>
             ) : (
-              <span>Pick a date</span>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-[#2D333F] border-gray-600" align="start">
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={handleSelect}
-            numberOfMonths={2}
-            className="bg-[#2D333F] text-white"
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
+              format(date.from, "LLL dd, y")
+            )
+          ) : (
+            <span>Pick a date</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 bg-[#2D333F] border-gray-600" align="start">
+        <Calendar
+          initialFocus
+          mode="range"
+          defaultMonth={date?.from}
+          selected={date}
+          onSelect={handleSelect}
+          numberOfMonths={2}
+          className="bg-[#2D333F] text-white"
+        />
+      </PopoverContent>
+    </Popover>
+  </div>
   );
 }
 
@@ -253,13 +252,13 @@ const Tasks = () => {
               </div>
               <button
                 onClick={openAddDialog}
-                className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
+                className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 cursor-pointer"
               >
                 Add Task
               </button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <button className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all duration-300">
+                  <button className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 cursor-pointer">
                     Delete All
                   </button>
                 </AlertDialogTrigger>
@@ -271,12 +270,12 @@ const Tasks = () => {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600">
+                    <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
                       Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={deleteAllTasks}
-                      className="bg-red-600 hover:bg-red-700"
+                      className="bg-red-600 hover:bg-red-700 cursor-pointer"
                     >
                       Yes, Delete All
                     </AlertDialogAction>
@@ -370,20 +369,20 @@ const Tasks = () => {
                       <td className="text-center">
                         <div className="flex justify-center gap-3">
                           <button
-                            className="text-blue-500 hover:text-blue-400 transition-colors duration-200"
+                            className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
                             onClick={() => openViewDialog(index)}
                           >
                             <Eye />
                           </button>
                           <button
-                            className="text-blue-500 hover:text-blue-400 transition-colors duration-200"
+                            className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
                             onClick={() => openEditDialog(index)}
                           >
                             <FilePenLine />
                           </button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <button className="text-red-500 hover:text-red-400 transition-colors duration-200">
+                              <button className="text-red-500 hover:text-red-400 transition-colors duration-200 cursor-pointer">
                                 <Trash2 />
                               </button>
                             </AlertDialogTrigger>
@@ -395,12 +394,12 @@ const Tasks = () => {
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600">
+                                <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
                                   Cancel
                                 </AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => deleteTask(index)}
-                                  className="bg-red-600 hover:bg-red-700"
+                                  className="bg-red-600 hover:bg-red-700 cursor-pointer"
                                 >
                                   Yes, Delete
                                 </AlertDialogAction>
@@ -495,7 +494,7 @@ const Tasks = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 rounded-lg text-white font-semibold hover:from-green-600 hover:to-green-700 focus:ring-4 focus:ring-green-500/30 transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 rounded-lg text-white font-semibold hover:from-green-600 hover:to-green-700 focus:ring-4 focus:ring-green-500/30 transition-all duration-300 cursor-pointer"
                 >
                   {isEditing ? "Update Task" : "Add Task"}
                 </button>
@@ -565,7 +564,7 @@ const Tasks = () => {
                   </div>
                   <button
                     type="button"
-                    className="w-full bg-gradient-to-r from-gray-500 to-gray-600 px-4 py-3 rounded-lg text-white font-semibold hover:from-gray-600 hover:to-gray-700 focus:ring-4 focus:ring-gray-500/30 transition-all duration-300"
+                    className="w-full bg-gradient-to-r from-gray-500 to-gray-600 px-4 py-3 rounded-lg text-white font-semibold hover:from-gray-600 hover:to-gray-700 focus:ring-4 focus:ring-gray-500/30 transition-all duration-300 cursor-pointer"
                     onClick={() => setViewDialogOpen(false)}
                   >
                     Close
