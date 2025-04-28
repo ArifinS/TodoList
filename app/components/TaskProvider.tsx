@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { TaskContext } from "./TaskContext";
-import { Trash2Icon } from '@lusid/icon';
 interface Task {
   title: string;
   description: string;
@@ -32,7 +31,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
         "Implement a Python solution to synchronize data between an API and a third-party database securely, optimizing data exchange.",
       tags: ["Python", "API", "Data Synchronization"],
       tagColors: ["bg-[#00D991A1]", "bg-[#FE1A1AB5]", "bg-[#BD560BB2]"],
-      priority: "High",
+      priority: "Medium",
       starred: false,
     },
     {
@@ -50,7 +49,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
         "Integrate a web API with a third-party database using secure methods, focusing on seamless data exchange and data integrity.",
       tags: ["Web", "Python", "Security"],
       tagColors: ["bg-[#2F43F8BF]", "bg-[#AE6D0BDB]", "bg-[#10FBEDB2]"],
-      priority: "High",
+      priority: "Medium",
       starred: false,
     },
     {

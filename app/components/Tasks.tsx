@@ -11,6 +11,11 @@ import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import Gropingdropdown from "./Gropingdropdown";
+import SearchStream from "./Searchtream";
+import { ToastContainer, toast } from 'react-toastify';
+
+import 'react-toastify/dist/ReactToastify.css';
 import {
   Popover,
   PopoverContent,
@@ -50,7 +55,42 @@ import {
 } from "@/components/ui/tooltip";
 import { useTaskContext } from "./TaskContext";
 
-// date-picker
+// Notify function (unchanged)
+const notify = (message, type = 'success') => {
+  switch (type) {
+    case 'success':
+      toast.success(message, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      break;
+    case 'error':
+      toast.error(message, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      break;
+    default:
+      toast(message, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+  }
+};
+
+// DatePickerWithRange component (unchanged)
 function DatePickerWithRange({
   className,
   value,
@@ -77,46 +117,47 @@ function DatePickerWithRange({
       onChange(newDate);
     }
   };
+
   return (
     <div className={cn("grid gap-2", className)}>
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          id="date"
-          variant={"outline"}
-          className={cn(
-            "w-[300px]justify-start text-left font-normal bg-[#2D333F] text-white border border-transparent hover:bg-gray-700 hover:text-color-700 transition-colors duration-300",
-            !date && "text-muted-foreground"
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {date?.from ? (
-            date.to ? (
-              <>
-                {format(date.from, "LLL dd, y")} -{" "}
-                {format(date.to, "LLL dd, y")}
-              </>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id="date"
+            variant={"outline"}
+            className={cn(
+              "w-[300px] justify-start text-left font-normal bg-[#2D333F] text-white border border-transparent hover:bg-gray-700 hover:text-color-700 transition-colors duration-300",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date?.from ? (
+              date.to ? (
+                <>
+                  {format(date.from, "LLL dd, y")} -{" "}
+                  {format(date.to, "LLL dd, y")}
+                </>
+              ) : (
+                format(date.from, "LLL dd, y")
+              )
             ) : (
-              format(date.from, "LLL dd, y")
-            )
-          ) : (
-            <span>Pick a date</span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 bg-[#2D333F] border-gray-600" align="start">
-        <Calendar
-          initialFocus
-          mode="range"
-          defaultMonth={date?.from}
-          selected={date}
-          onSelect={handleSelect}
-          numberOfMonths={2}
-          className="bg-[#2D333F] text-white"
-        />
-      </PopoverContent>
-    </Popover>
-  </div>
+              <span>Pick a date</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0 bg-[#2D333F] border-gray-600" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={date?.from}
+            selected={date}
+            onSelect={handleSelect}
+            numberOfMonths={2}
+            className="bg-[#2D333F] text-white"
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 
@@ -137,7 +178,7 @@ const Tasks = () => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const [viewingIndex, setViewingIndex] = React.useState<number | null>(null);
-  const [priorityFilter, setPriorityFilter] = React.useState("All");
+  const [groupBy, setGroupBy] = React.useState<string>("None");
 
   const {
     register,
@@ -204,12 +245,37 @@ const Tasks = () => {
     reset();
   };
 
+  // Filter tasks by search term
   const filteredTasks = tasks.filter(
     (task) =>
-      (task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (priorityFilter === "All" || task.priority === priorityFilter)
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Group tasks based on groupBy state
+  const groupedTasks = React.useMemo(() => {
+    if (groupBy === "None") {
+      return { None: filteredTasks };
+    }
+
+    const groups: { [key: string]: typeof tasks } = {};
+
+    if (groupBy === "Priority") {
+      ["Low", "Medium", "High"].forEach((priority) => {
+        groups[priority] = filteredTasks.filter((task) => task.priority === priority);
+      });
+    } else if (groupBy === "Favorites") {
+      groups["Starred"] = filteredTasks.filter((task) => task.starred);
+      groups["Not Starred"] = filteredTasks.filter((task) => !task.starred);
+    } else if (groupBy === "Tags") {
+      const allTags = new Set(filteredTasks.flatMap((task) => task.tags));
+      allTags.forEach((tag) => {
+        groups[tag] = filteredTasks.filter((task) => task.tags.includes(tag));
+      });
+    }
+
+    return groups;
+  }, [filteredTasks, groupBy]);
 
   return (
     <section className="mb-20" id="tasks">
@@ -218,38 +284,9 @@ const Tasks = () => {
           <div className="mb-14 items-center justify-between sm:flex">
             <h2 className="text-2xl font-semibold text-white max-sm:mb-4">Your Tasks</h2>
             <div className="flex items-center space-x-5">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="bg-[#2D333F] text-white border-gray-600 hover:bg-gray-700"
-                  >
-                    Filter by Priority: {priorityFilter}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-[#2D333F] text-white border-gray-600">
-                  <DropdownMenuLabel>Priority Filter</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-gray-600" />
-                  {["All", "Low", "Medium", "High"].map((priority) => (
-                    <DropdownMenuItem
-                      key={priority}
-                      onClick={() => setPriorityFilter(priority)}
-                      className="hover:bg-gray-700 focus:bg-gray-700"
-                    >
-                      {priority}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <div className="relative overflow-hidden rounded-lg text-gray-50 md:min-w-[380px] lg:min-w-[440px]">
-                <input
-                  type="search"
-                  className="z-20 block w-full bg-[#2D333F] px-4 py-2.5 pr-10 text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none transition-all duration-200"
-                  placeholder="Search by title or description"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+              {/* Updated DropdownMenu for grouping */}
+              <Gropingdropdown groupBy={groupBy} setGroupBy={setGroupBy} />
+              <SearchStream searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
               <button
                 onClick={openAddDialog}
                 className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 cursor-pointer"
@@ -274,7 +311,10 @@ const Tasks = () => {
                       Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={deleteAllTasks}
+                      onClick={() => {
+                        notify('Delete all tasks', 'error');
+                        deleteAllTasks();
+                      }}
                       className="bg-red-600 hover:bg-red-700 cursor-pointer"
                     >
                       Yes, Delete All
@@ -286,136 +326,152 @@ const Tasks = () => {
           </div>
 
           <TooltipProvider>
-            <table className="table-fixed w-full text-white">
-              <thead>
-                <tr className="border-b border-[#2E3443]">
-                  <th className="p-4">★</th>
-                  <th className="p-4 text-left">Title</th>
-                  <th className="p-4 text-left">Description</th>
-                  <th className="p-4 text-left">Tags</th>
-                  <th className="p-4 text-center">Priority</th>
-                  <th className="p-4 text-center">Date Range</th>
-                  <th className="p-4 text-center">Options</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTasks.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-8 text-gray-300 text-lg">
-                      No task will show here
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTasks.map((task, index) => (
-                    <tr key={index} className="border-b border-[#2E3443]">
-                      <td className="text-center">
-                        <svg
-                          onClick={() => toggleStar(index)}
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="cursor-pointer"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          stroke={task.starred ? "yellow" : "currentColor"}
-                          fill={task.starred ? "yellow" : "none"}
-                        >
-                          <path d="M12 17.75l-6.172 3.245l1.179-6.873l-5-4.867l6.9-1L12 2l3.086 6.255l6.9 1l-5 4.867l1.179 6.873z" />
-                        </svg>
-                      </td>
-                      <td className="p-4 truncate max-w-[100px]">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="cursor-default">{task.title}</span>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-[#2D333F] text-white border-gray-600">
-                            <p>{task.title}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </td>
-                      <td className="p-4 truncate max-w-[300px]">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="cursor-default">{task.description}</span>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-[#2D333F] text-white border-gray-600">
-                          <p className="" style={{ width: '400px' }}>{task.description}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </td>
-                      <td>
-                        <ul className="flex flex-wrap gap-1.5">
-                          {task.tags.map((tag, i) => (
-                            <li key={i}>
-                              <span className="inline-block rounded px-2 py-0.5 text-sm bg-blue-700 text-white">
-                                {tag}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                      <td className="text-center">{task.priority}</td>
-                      <td className="text-center">
-                        {task.dateRange?.from ? (
-                          task.dateRange.to ? (
-                            `${format(task.dateRange.from, "10 dd, y")} - ${format(task.dateRange.to, "LLL dd, y")}`
-                          ) : (
-                            format(task.dateRange.from, "LLL dd, y")
-                          )
-                        ) : (
-                          "No date"
-                        )}
-                      </td>
-                      <td className="text-center">
-                        <div className="flex justify-center gap-3">
-                          <button
-                            className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
-                            onClick={() => openViewDialog(index)}
-                          >
-                            <Eye />
-                          </button>
-                          <button
-                            className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
-                            onClick={() => openEditDialog(index)}
-                          >
-                            <FilePenLine />
-                          </button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <button className="text-red-500 hover:text-red-400 transition-colors duration-200 cursor-pointer">
-                                <Trash2 />
-                              </button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-[#2D333F] text-white border-gray-600">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription className="text-gray-300">
-                                  This task will be deleted permanently.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteTask(index)}
-                                  className="bg-red-600 hover:bg-red-700 cursor-pointer"
+            {Object.keys(groupedTasks).length === 0 ? (
+              <div className="text-center py-8 text-gray-300 text-lg">
+                No tasks to display
+              </div>
+            ) : (
+              Object.entries(groupedTasks).map(([group, groupTasks]) => (
+                groupTasks.length > 0 && (
+                  <div key={group} className="mb-8">
+                    <h3 className="text-xl font-semibold text-white mb-4">
+                      {groupBy === "Favorites"
+                        ? group
+                        : groupBy === "Priority"
+                        ? `Priority: ${group}`
+                        : groupBy === "Tags"
+                        ? `Tag: ${group}`
+                        : "Tasks"}
+                    </h3>
+                    <table className="table-fixed w-full text-white">
+                      <thead>
+                        <tr className="border-b border-[#2E3443]">
+                          <th className="p-4">★</th>
+                          <th className="p-4 text-left">Title</th>
+                          <th className="p-4 text-left">Description</th>
+                          <th className="p-4 text-left">Tags</th>
+                          <th className="p-4 text-center">Priority</th>
+                          <th className="p-4 text-center">Date Range</th>
+                          <th className="p-4 text-center">Options</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupTasks.map((task, index) => (
+                          <tr key={index} className="border-b border-[#2E3443]">
+                            <td className="text-center">
+                              <svg
+                                onClick={() => toggleStar(tasks.indexOf(task))}
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="cursor-pointer"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                                stroke={task.starred ? "yellow" : "currentColor"}
+                                fill={task.starred ? "yellow" : "none"}
+                              >
+                                <path d="M12 17.75l-6.172 3.245l1.179-6.873l-5-4.867l6.9-1L12 2l3.086 6.255l6.9 1l-5 4.867l1.179 6.873z" />
+                              </svg>
+                            </td>
+                            <td className="p-4 truncate max-w-[100px]">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-default">{task.title}</span>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-[#2D333F] text-white border-gray-600">
+                                  <p>{task.title}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                            <td className="p-4 truncate max-w-[300px]">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-default">{task.description}</span>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-[#2D333F] text-white border-gray-600">
+                                  <p style={{ width: '400px' }}>{task.description}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                            <td>
+                              <ul className="flex flex-wrap gap-1.5">
+                                {task.tags.map((tag, i) => (
+                                  <li key={i}>
+                                    <span className="inline-block rounded px-2 py-0.5 text-sm bg-blue-700 text-white">
+                                      {tag}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </td>
+                            <td className="text-center">{task.priority}</td>
+                            <td className="text-center">
+                              {task.dateRange?.from ? (
+                                task.dateRange.to ? (
+                                  `${format(task.dateRange.from, "LLL dd, y")} - ${format(task.dateRange.to, "LLL dd, y")}`
+                                ) : (
+                                  format(task.dateRange.from, "LLL dd, y")
+                                )
+                              ) : (
+                                "No date"
+                              )}
+                            </td>
+                            <td className="text-center">
+                              <div className="flex justify-center gap-3">
+                                <button
+                                  className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
+                                  onClick={() => openViewDialog(tasks.indexOf(task))}
                                 >
-                                  Yes, Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                                  <Eye />
+                                </button>
+                                <button
+                                  className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
+                                  onClick={() => openEditDialog(tasks.indexOf(task))}
+                                >
+                                  <FilePenLine />
+                                </button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <button className="text-red-500 hover:text-red-400 transition-colors duration-200 cursor-pointer">
+                                      <Trash2 />
+                                    </button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="bg-[#2D333F] text-white border-gray-600">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                      <AlertDialogDescription className="text-gray-300">
+                                        This task will be deleted permanently.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => {
+                                          notify('Delete single task!', 'error');
+                                          deleteTask(tasks.indexOf(task));
+                                        }}
+                                        className="bg-red-600 hover:bg-red-700 cursor-pointer"
+                                      >
+                                        Yes, Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ))
+            )}
           </TooltipProvider>
 
-          {/* Edit/Add Task Dialog */}
+          {/* Edit/Add Task Dialog (unchanged) */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent className="bg-gradient-to-br from-[#1D212B] to-[#2A2F3B] text-white rounded-2xl shadow-2xl p-8 max-w-md mx-auto border border-gray-700/50">
               <DialogHeader>
@@ -493,6 +549,7 @@ const Tasks = () => {
                   />
                 </div>
                 <button
+                  onClick={() => notify('Successfully added task!', 'success')}
                   type="submit"
                   className="w-full bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 rounded-lg text-white font-semibold hover:from-green-600 hover:to-green-700 focus:ring-4 focus:ring-green-500/30 transition-all duration-300 cursor-pointer"
                 >
@@ -502,7 +559,7 @@ const Tasks = () => {
             </DialogContent>
           </Dialog>
 
-          {/* View Task Details Dialog */}
+          {/* View Task Details Dialog (unchanged) */}
           <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
             <DialogContent className="text-center bg-gradient-to-br from-[#1D212B] to-[#2A2F3B] text-white rounded-2xl shadow-2xl p-8 max-w-md mx-auto border border-gray-700/50">
               <DialogHeader>
@@ -541,22 +598,6 @@ const Tasks = () => {
                     >
                       {tasks[viewingIndex].priority}
                     </span>
-                  </div>
-                  <div>
-                    {/* <label className="block mb-2 text-sm font-medium text-gray-300">Date Range</label>
-                    <div className="flex items-center space-x-3">
-                      <p className="flex-1 px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600">
-                        {tasks[viewingIndex].dateRange?.from
-                          ? format(tasks[viewingIndex].dateRange.from, "LLL dd, y")
-                          : "No start date"}
-                      </p>
-                      <span className="text-gray-300">to</span>
-                      <p className="flex-1 px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600">
-                        {tasks[viewingIndex].dateRange?.to
-                          ? format(tasks[viewingIndex].dateRange.to, "LLL dd, y")
-                          : "No end date"}
-                      </p>
-                    </div> */}
                   </div>
                 </div>
               )}
