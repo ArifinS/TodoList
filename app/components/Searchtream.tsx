@@ -6,10 +6,10 @@ interface SearchStreamProps {
 }
 const SearchStream: React.FC<SearchStreamProps> = ({ searchTerm, setSearchTerm }) => {
   return (
-    <div className="relative overflow-hidden rounded-lg text-gray-50 md:min-w-[380px] lg:min-w-[440px]">
+    <div className="relative rounded-lg   text-gray-50 md:min-w-[380px] lg:min-w-[440px] ">
       <input
         type="search"
-        className="z-20 block w-full bg-[#2D333F] px-4 py-2.5 pr-10 text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none transition-all duration-200"
+        className="z-20 block w-full bg-[#2D333F] px-4 py-2.5 pr-10 text-white border border-gray-600  outline-none transition-all duration-200"
         placeholder="Search by title or description"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}

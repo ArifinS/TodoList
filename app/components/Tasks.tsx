@@ -1,21 +1,21 @@
+
 "use client";
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { taskSchema, TaskFormData } from "./TaskValidation";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { addDays, format } from "date-fns";
-import { CalendarIcon, Trash2, FilePenLine, Eye } from "lucide-react";
-import { DateRange } from "react-day-picker";
+import { Trash2, FilePenLine, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import TaskDetailsDialog from "./TaskDetailsDialog";
+import AddEditTaskDialog from "./AddEditTaskDialog";
 import Gropingdropdown from "./Gropingdropdown";
 import SearchStream from "./Searchtream";
-import { ToastContainer, toast } from 'react-toastify';
-
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Popover,
   PopoverContent,
@@ -40,14 +40,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -56,9 +48,9 @@ import {
 import { useTaskContext } from "./TaskContext";
 
 // Notify function (unchanged)
-const notify = (message, type = 'success') => {
+const notify = (message: string, type: "success" | "error" = "success") => {
   switch (type) {
-    case 'success':
+    case "success":
       toast.success(message, {
         position: "top-right",
         autoClose: 3000,
@@ -68,7 +60,7 @@ const notify = (message, type = 'success') => {
         draggable: true,
       });
       break;
-    case 'error':
+    case "error":
       toast.error(message, {
         position: "top-right",
         autoClose: 3000,
@@ -89,77 +81,6 @@ const notify = (message, type = 'success') => {
       });
   }
 };
-
-// DatePickerWithRange component (unchanged)
-function DatePickerWithRange({
-  className,
-  value,
-  onChange,
-}: {
-  className?: string;
-  value?: DateRange | undefined;
-  onChange?: (date: DateRange | undefined) => void;
-}) {
-  const [date, setDate] = React.useState<DateRange | undefined>(
-    value || {
-      from: new Date(),
-      to: addDays(new Date(), 7),
-    }
-  );
-
-  React.useEffect(() => {
-    setDate(value);
-  }, [value]);
-
-  const handleSelect = (newDate: DateRange | undefined) => {
-    setDate(newDate);
-    if (onChange) {
-      onChange(newDate);
-    }
-  };
-
-  return (
-    <div className={cn("grid gap-2", className)}>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            id="date"
-            variant={"outline"}
-            className={cn(
-              "w-[300px] justify-start text-left font-normal bg-[#2D333F] text-white border border-transparent hover:bg-gray-700 hover:text-color-700 transition-colors duration-300",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
-                <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
-                </>
-              ) : (
-                format(date.from, "LLL dd, y")
-              )
-            ) : (
-              <span>Pick a date</span>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-[#2D333F] border-gray-600" align="start">
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={handleSelect}
-            numberOfMonths={2}
-            className="bg-[#2D333F] text-white"
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
 
 const Tasks = () => {
   const {
@@ -194,7 +115,6 @@ const Tasks = () => {
       description: "",
       tags: "",
       priority: "Medium",
-      dateRange: { from: new Date(), to: addDays(new Date(), 7) },
     },
   });
 
@@ -204,7 +124,6 @@ const Tasks = () => {
     setValue("description", task.description);
     setValue("tags", task.tags.join(","));
     setValue("priority", task.priority);
-    setValue("dateRange", task.dateRange);
     setIsEditing(true);
     setEditingIndex(index);
     setDialogOpen(true);
@@ -234,8 +153,7 @@ const Tasks = () => {
         formattedData.title,
         formattedData.description,
         formattedData.tags,
-        formattedData.priority,
-        formattedData.dateRange
+        formattedData.priority
       );
     } else {
       addTask(formattedData);
@@ -284,7 +202,6 @@ const Tasks = () => {
           <div className="mb-14 items-center justify-between sm:flex">
             <h2 className="text-2xl font-semibold text-white max-sm:mb-4">Your Tasks</h2>
             <div className="flex items-center space-x-5">
-              {/* Updated DropdownMenu for grouping */}
               <Gropingdropdown groupBy={groupBy} setGroupBy={setGroupBy} />
               <SearchStream searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
               <button
@@ -312,7 +229,7 @@ const Tasks = () => {
                     </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => {
-                        notify('Delete all tasks', 'error');
+                        notify("Delete all tasks", "error");
                         deleteAllTasks();
                       }}
                       className="bg-red-600 hover:bg-red-700 cursor-pointer"
@@ -341,7 +258,7 @@ const Tasks = () => {
                         ? `Priority: ${group}`
                         : groupBy === "Tags"
                         ? `Tag: ${group}`
-                        : "Tasks"}
+                        : ""}
                     </h3>
                     <table className="table-fixed w-full text-white">
                       <thead>
@@ -351,7 +268,6 @@ const Tasks = () => {
                           <th className="p-4 text-left">Description</th>
                           <th className="p-4 text-left">Tags</th>
                           <th className="p-4 text-center">Priority</th>
-                          <th className="p-4 text-center">Date Range</th>
                           <th className="p-4 text-center">Options</th>
                         </tr>
                       </thead>
@@ -389,7 +305,7 @@ const Tasks = () => {
                                   <span className="cursor-default">{task.description}</span>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-[#2D333F] text-white border-gray-600">
-                                  <p style={{ width: '400px' }}>{task.description}</p>
+                                  <p style={{ width: "400px" }}>{task.description}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </td>
@@ -397,7 +313,9 @@ const Tasks = () => {
                               <ul className="flex flex-wrap gap-1.5">
                                 {task.tags.map((tag, i) => (
                                   <li key={i}>
-                                    <span className="inline-block rounded px-2 py-0.5 text-sm bg-blue-700 text-white">
+                                    <span
+                                      className={`inline-block rounded px-2 py-0.5 text-sm text-white ${task.tagColors[i]}`}
+                                    >
                                       {tag}
                                     </span>
                                   </li>
@@ -405,17 +323,6 @@ const Tasks = () => {
                               </ul>
                             </td>
                             <td className="text-center">{task.priority}</td>
-                            <td className="text-center">
-                              {task.dateRange?.from ? (
-                                task.dateRange.to ? (
-                                  `${format(task.dateRange.from, "LLL dd, y")} - ${format(task.dateRange.to, "LLL dd, y")}`
-                                ) : (
-                                  format(task.dateRange.from, "LLL dd, y")
-                                )
-                              ) : (
-                                "No date"
-                              )}
-                            </td>
                             <td className="text-center">
                               <div className="flex justify-center gap-3">
                                 <button
@@ -449,7 +356,7 @@ const Tasks = () => {
                                       </AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => {
-                                          notify('Delete single task!', 'error');
+                                          notify("Delete single task!", "error");
                                           deleteTask(tasks.indexOf(task));
                                         }}
                                         className="bg-red-600 hover:bg-red-700 cursor-pointer"
@@ -471,140 +378,26 @@ const Tasks = () => {
             )}
           </TooltipProvider>
 
-          {/* Edit/Add Task Dialog (unchanged) */}
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="bg-gradient-to-br from-[#1D212B] to-[#2A2F3B] text-white rounded-2xl shadow-2xl p-8 max-w-md mx-auto border border-gray-700/50">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold tracking-tight text-white">
-                  {isEditing ? "Edit Task" : "Add New Task"}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-gray-300">
-                  Fill out the form to {isEditing ? "update" : "create"} a task.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-300">Title</label>
-                  <input
-                    {...register("title")}
-                    className="w-full px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none transition-all duration-200 placeholder-gray-500"
-                    placeholder="Enter task title"
-                  />
-                  {errors.title && (
-                    <p className="text-red-400 text-sm mt-1">{errors.title.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-300">Description</label>
-                  <textarea
-                    {...register("description")}
-                    className="w-full h-28 px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none resize-none transition-all duration-200 placeholder-gray-500"
-                    placeholder="Enter task description"
-                  />
-                  {errors.description && (
-                    <p className="text-red-400 text-sm mt-1">{errors.description.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-300">Tags (comma-separated)</label>
-                  <input
-                    {...register("tags")}
-                    className="w-full px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none transition-all duration-200 placeholder-gray-500"
-                    placeholder="e.g., work, urgent"
-                  />
-                  {errors.tags && (
-                    <p className="text-red-400 text-sm mt-1">{errors.tags.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-300">Priority</label>
-                  <RadioGroup
-                    value={watch("priority")}
-                    onValueChange={(value) => setValue("priority", value)}
-                    className="flex space-x-4"
-                  >
-                    {["Low", "Medium", "High"].map((level) => (
-                      <div key={level} className="flex items-center space-x-2">
-                        <RadioGroupItem
-                          value={level}
-                          id={level.toLowerCase()}
-                          className="text-green-500 border-gray-500 focus:ring-green-500"
-                        />
-                        <Label
-                          htmlFor={level.toLowerCase()}
-                          className="text-gray-300 hover:text-white transition-colors duration-200"
-                        >
-                          {level}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-300">Date Range</label>
-                  <DatePickerWithRange
-                    value={watch("dateRange")}
-                    onChange={(date) => setValue("dateRange", date)}
-                    className="w-full bg-[#2D333F] text-white border border-gray-600 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/30"
-                  />
-                </div>
-                <button
-                  onClick={() => notify('Successfully added task!', 'success')}
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 rounded-lg text-white font-semibold hover:from-green-600 hover:to-green-700 focus:ring-4 focus:ring-green-500/30 transition-all duration-300 cursor-pointer"
-                >
-                  {isEditing ? "Update Task" : "Add Task"}
-                </button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          {/* Edit/Add Task Dialog */}
+          <TaskDetailsDialog
+            open={viewDialogOpen}
+            onOpenChange={setViewDialogOpen}
+            task={viewingIndex !== null ? tasks[viewingIndex] : null}
+          />
 
-          {/* View Task Details Dialog (unchanged) */}
-          <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-            <DialogContent className="text-center bg-gradient-to-br from-[#1D212B] to-[#2A2F3B] text-white rounded-2xl shadow-2xl p-8 max-w-md mx-auto border border-gray-700/50">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold tracking-tight text-white text-center">
-                  Task Details
-                </DialogTitle>
-                <DialogDescription className="text-sm text-gray-300 text-center">
-                  Review the task details below.
-                </DialogDescription>
-              </DialogHeader>
-              {viewingIndex !== null && tasks[viewingIndex] && (
-                <div className="space-y-6 mt-6">
-                  <div>
-                    <p className="w-full py-2.5 rounded-lg text-white">
-                      {tasks[viewingIndex].title}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="w-full py-2.5 rounded-lg text-white">
-                      {tasks[viewingIndex].description}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="w-full py-2.5 rounded-lg bg-gray-700 text-white">
-                      {tasks[viewingIndex].tags.join(", ")}
-                    </p>
-                  </div>
-                  <div>
-                    <span
-                      className={cn(
-                        "px-4 py-2 rounded-lg text-white",
-                        tasks[viewingIndex].priority === "Low" && "bg-gray-700",
-                        tasks[viewingIndex].priority === "Medium" && "bg-yellow-600",
-                        tasks[viewingIndex].priority === "High" && "bg-green-600"
-                      )}
-                    >
-                      {tasks[viewingIndex].priority}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+          {/* View Task Details Dialog */}
+          <AddEditTaskDialog
+            dialogOpen={dialogOpen}
+            setDialogOpen={setDialogOpen}
+            isEditing={isEditing}
+            editingIndex={editingIndex}
+            tasks={tasks}
+            editTask={editTask}
+            addTask={addTask}
+          />
         </div>
       </div>
+      <ToastContainer />
     </section>
   );
 };

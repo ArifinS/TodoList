@@ -1,7 +1,8 @@
 "use client";
 import { createContext, useContext } from "react";
 
-interface Task {
+export interface Task {
+  id: string;
   title: string;
   description: string;
   tags: string[];
@@ -14,11 +15,22 @@ interface TaskContextType {
   tasks: Task[];
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  addTask: (task: { title: string; description: string; tags: string }) => void;
-  deleteTask: (index: number) => void;
+  addTask: (task: {
+    title: string;
+    description: string;
+    tags: string[];
+    priority: string;
+  }) => void;
+  deleteTask: (id: string) => void;
   deleteAllTasks: () => void;
-  editTask: (index: number, title: string, description: string) => void;
-  toggleStar: (index: number) => void;
+  editTask: (
+    id: string,
+    title: string,
+    description: string,
+    tags: string[],
+    priority: string
+  ) => void;
+  toggleStar: (id: string) => void;
 }
 
 export const TaskContext = createContext<TaskContextType | undefined>(undefined);

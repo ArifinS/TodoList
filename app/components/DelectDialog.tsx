@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface DeleteDialogProps {
-  isOpen: boolean; // Controls whether the dialog is open
-  onClose: () => void; // Function to close the dialog
-  onDelete: () => void; // Function to handle deletion
+  isOpen: boolean; 
+  onClose: () => void; 
+  onDelete: () => void; 
 }
 
 const DeleteDialog: React.FC<DeleteDialogProps> = ({ isOpen, onClose, onDelete }) => {

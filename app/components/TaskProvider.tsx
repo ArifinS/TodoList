@@ -1,7 +1,10 @@
 "use client";
 import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { TaskContext } from "./TaskContext";
+
 interface Task {
+  id: string; 
   title: string;
   description: string;
   tags: string[];
@@ -17,6 +20,7 @@ interface TaskProviderProps {
 export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>([
     {
+      id: uuidv4(),
       title: "Integration API With Api another",
       description:
         "Connect an existing API to a third-party database using secure methods and handle data exchange efficiently.",
@@ -26,6 +30,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
       starred: true,
     },
     {
+      id: uuidv4(),
       title: "API Data Synchronization with Python",
       description:
         "Implement a Python solution to synchronize data between an API and a third-party database securely, optimizing data exchange.",
@@ -35,6 +40,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
       starred: false,
     },
     {
+      id: uuidv4(),
       title: "Efficient Web API Connectivity in Python",
       description:
         "Develop a Python-based solution for connecting an API to a third-party database securely, focusing on efficient data handling and exchange.",
@@ -44,6 +50,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
       starred: false,
     },
     {
+      id: uuidv4(),
       title: "Data Handling Data Synchronization",
       description:
         "Integrate a web API with a third-party database using secure methods, focusing on seamless data exchange and data integrity.",
@@ -53,6 +60,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
       starred: false,
     },
     {
+      id: uuidv4(),
       title: "Data Handling Data Synchronization",
       description:
         "Integrate a web API with a third-party database using secure methods, focusing on seamless data exchange and data integrity.",
@@ -65,13 +73,13 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  const addTask = ({ title, description, tags, priority }: { title: string; description: string; tags: string[]; priority: string }) => {
+  const addTask = ({ title, description, tags, priority}: { title: string; description: string; tags: string[]; priority: string }) => {
     const tagColors = tags.map((_, i) => {
       const colors = ["bg-green-500", "bg-blue-500", "bg-red-500", "bg-yellow-500"];
       return colors[i % colors.length];
     });
-
     const newTask: Task = {
+      id: uuidv4(), 
       title: title || "Untitled Task",
       description: description || "No description",
       tags: tags.length ? tags : ["General"],
