@@ -1,15 +1,13 @@
-// components/AddEditTaskDialog.tsx
 "use client";
 
-import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import React, { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { taskSchema, TaskFormData } from "./TaskValidation";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Button } from "@/components/ui/button";
 import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { DatePicker } from "./date-picker";
 import {
   Dialog,
   DialogContent,
@@ -17,28 +15,49 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import "react-toastify/dist/ReactToastify.css";
 
 // Notify function
 const notify = (message: string, type: "success" | "error" = "success") => {
   switch (type) {
     case "success":
-      toast.success(message);
+      toast.success(message, { theme: "dark" });
       break;
     case "error":
-      toast.error(message);
+      toast.error(message, { theme: "dark" });
       break;
     default:
-      toast(message);
+      toast(message, { theme: "dark" });
   }
 };
+
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  tagColors: string[];
+  priority: string;
+  starred: boolean;
+  dueDate?: Date | null;
+}
 
 interface AddEditTaskDialogProps {
   dialogOpen: boolean;
   setDialogOpen: (open: boolean) => void;
   isEditing: boolean;
-  editingIndex: number | null;
-  tasks: any[];
-  editTask: (index: number, title: string, description: string, tags: string[], priority: string) => void;
+  editingTaskId: string | null;
+  tasks: Task[];
+  editTask: (
+    id: string,
+    title: string,
+    description: string,
+    tags: string[],
+    priority: string,
+    dueDate?: Date | null
+  ) => void;
   addTask: (data: TaskFormData) => void;
 }
 
@@ -46,7 +65,7 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
   dialogOpen,
   setDialogOpen,
   isEditing,
-  editingIndex,
+  editingTaskId,
   tasks,
   editTask,
   addTask,
@@ -57,6 +76,7 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
     setValue,
     watch,
     reset,
+    control,
     formState: { errors },
   } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
@@ -65,38 +85,54 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
       description: "",
       tags: "",
       priority: "Medium",
+      dueDate: null,
     },
   });
 
-  // ✅ Effect to load data when in edit mode
+  const [open, setOpen] = useState(false);
+
   useEffect(() => {
-    if (isEditing && editingIndex !== null && tasks[editingIndex]) {
-      const currentTask = tasks[editingIndex];
-      setValue("title", currentTask.title);
-      setValue("description", currentTask.description);
-      setValue("tags", currentTask.tags.join(","));
-      setValue("priority", currentTask.priority);
-    } else if (!isEditing) {
-      reset(); // Reset form for adding new task
+    if (isEditing && editingTaskId) {
+      const currentTask = tasks.find((task) => task.id === editingTaskId);
+      if (currentTask) {
+        setValue("title", currentTask.title);
+        setValue("description", currentTask.description);
+        setValue("tags", currentTask.tags.join(","));
+        setValue("priority", currentTask.priority);
+        setValue("dueDate", currentTask.dueDate || null);
+      }
+    } else {
+      reset({
+        title: "",
+        description: "",
+        tags: "",
+        priority: "Medium",
+        dueDate: null,
+      });
     }
-  }, [isEditing, editingIndex, tasks, setValue, reset]);
+  }, [isEditing, editingTaskId, tasks, setValue, reset]);
 
   const onSubmit = (data: TaskFormData) => {
     const formattedData = {
       ...data,
       tags: data.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
     };
-    if (isEditing && editingIndex !== null) {
+
+    if (isEditing && editingTaskId) {
       editTask(
-        editingIndex,
+        editingTaskId,
         formattedData.title,
         formattedData.description,
         formattedData.tags,
-        formattedData.priority
+        formattedData.priority,
+        formattedData.dueDate
       );
+      notify("Successfully updated task!", "success");
     } else {
       addTask(formattedData);
+      notify("Successfully added task!", "success");
     }
+
     setDialogOpen(false);
     reset();
   };
@@ -115,7 +151,7 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-300">Title</label>
+              <Label className="block mb-1 text-sm font-medium text-gray-300">Title</Label>
               <input
                 {...register("title")}
                 className="w-full px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none transition-all duration-200 placeholder-gray-500"
@@ -126,7 +162,7 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
               )}
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-300">Description</label>
+              <Label className="block mb-1 text-sm font-medium text-gray-300">Description</Label>
               <textarea
                 {...register("description")}
                 className="w-full h-28 px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none resize-none transition-all duration-200 placeholder-gray-500"
@@ -137,7 +173,7 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
               )}
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-300">Tags (comma-separated)</label>
+              <Label className="block mb-1 text-sm font-medium text-gray-300">Tags (comma-separated)</Label>
               <input
                 {...register("tags")}
                 className="w-full px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none transition-all duration-200 placeholder-gray-500"
@@ -148,7 +184,40 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
               )}
             </div>
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-300">Priority</label>
+              <Label className="block mb-1 text-sm font-medium text-gray-300">Due Date</Label>
+              <div className="flex items-center gap-2">
+                <Controller
+                  control={control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <DatePicker
+                      selected={field.value}
+                      onChange={(date) => {
+                        field.onChange(date);
+                        setOpen(false); // Close Popover after selection
+                      }}
+                      placeholderText="Select due date"
+                      className="w-full px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none transition-all duration-200 placeholder-gray-500"
+                    />
+                  )}
+                />
+                {watch("dueDate") && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setValue("dueDate", null)}
+                    className="text-gray-400 hover:text-white hover:bg-[#3A404E]"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {errors.dueDate && (
+                <p className="text-red-400 text-sm mt-1">{errors.dueDate.message}</p>
+              )}
+            </div>
+            <div>
+              <Label className="block mb-2 text-sm font-medium text-gray-300">Priority</Label>
               <RadioGroup
                 value={watch("priority")}
                 onValueChange={(value) => setValue("priority", value)}
@@ -172,7 +241,6 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
               </RadioGroup>
             </div>
             <button
-              onClick={() => notify("Successfully added task!", "success")}
               type="submit"
               className="w-full bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 rounded-lg text-white font-semibold hover:from-green-600 hover:to-green-700 focus:ring-4 focus:ring-green-500/30 transition-all duration-300 cursor-pointer"
             >
@@ -181,7 +249,7 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
           </form>
         </DialogContent>
       </Dialog>
-      <ToastContainer />
+      <ToastContainer theme="dark" position="bottom-right" />
     </>
   );
 };

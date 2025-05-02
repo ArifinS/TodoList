@@ -1,3 +1,4 @@
+
 "use client";
 import { createContext, useContext } from "react";
 
@@ -9,6 +10,7 @@ export interface Task {
   tagColors: string[];
   priority: string;
   starred: boolean;
+  dueDate?: Date | null; // Added dueDate
 }
 
 interface TaskContextType {
@@ -20,6 +22,7 @@ interface TaskContextType {
     description: string;
     tags: string[];
     priority: string;
+    dueDate?: Date | null;
   }) => void;
   deleteTask: (id: string) => void;
   deleteAllTasks: () => void;
@@ -28,7 +31,8 @@ interface TaskContextType {
     title: string,
     description: string,
     tags: string[],
-    priority: string
+    priority: string,
+    dueDate?: Date | null
   ) => void;
   toggleStar: (id: string) => void;
 }

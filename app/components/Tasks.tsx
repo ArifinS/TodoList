@@ -1,26 +1,17 @@
-
 "use client";
 
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { taskSchema, TaskFormData } from "./TaskValidation";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Trash2, FilePenLine, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import TaskDetailsDialog from "./TaskDetailsDialog";
 import AddEditTaskDialog from "./AddEditTaskDialog";
 import Gropingdropdown from "./Gropingdropdown";
 import SearchStream from "./Searchtream";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -33,13 +24,6 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -47,7 +31,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useTaskContext } from "./TaskContext";
 
-// Notify function (unchanged)
 const notify = (message: string, type: "success" | "error" = "success") => {
   switch (type) {
     case "success":
@@ -97,8 +80,8 @@ const Tasks = () => {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [viewDialogOpen, setViewDialogOpen] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
-  const [viewingIndex, setViewingIndex] = React.useState<number | null>(null);
+  const [editingTaskId, setEditingTaskId] = React.useState<string | null>(null);
+  const [viewingTaskId, setViewingTaskId] = React.useState<string | null>(null);
   const [groupBy, setGroupBy] = React.useState<string>("None");
 
   const {
@@ -118,26 +101,32 @@ const Tasks = () => {
     },
   });
 
-  const openEditDialog = (index: number) => {
-    const task = tasks[index];
-    setValue("title", task.title);
-    setValue("description", task.description);
-    setValue("tags", task.tags.join(","));
-    setValue("priority", task.priority);
-    setIsEditing(true);
-    setEditingIndex(index);
-    setDialogOpen(true);
+  const getTaskById = (id: string) => {
+    return tasks?.find((task) => task.id === id) || null;
   };
 
-  const openViewDialog = (index: number) => {
-    setViewingIndex(index);
+  const openEditDialog = (id: string) => {
+    const task = getTaskById(id);
+    if (task) {
+      setValue("title", task.title);
+      setValue("description", task.description);
+      setValue("tags", task.tags.join(","));
+      setValue("priority", task.priority);
+      setIsEditing(true);
+      setEditingTaskId(id);
+      setDialogOpen(true);
+    }
+  };
+
+  const openViewDialog = (id: string) => {
+    setViewingTaskId(id);
     setViewDialogOpen(true);
   };
 
   const openAddDialog = () => {
     reset();
     setIsEditing(false);
-    setEditingIndex(null);
+    setEditingTaskId(null);
     setDialogOpen(true);
   };
 
@@ -147,38 +136,36 @@ const Tasks = () => {
       tags: data.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
     };
 
-    if (isEditing && editingIndex !== null) {
+    if (isEditing && editingTaskId !== null) {
       editTask(
-        editingIndex,
+        editingTaskId,
         formattedData.title,
         formattedData.description,
         formattedData.tags,
         formattedData.priority
       );
+      notify("Task updated successfully!", "success");
     } else {
       addTask(formattedData);
+      notify("Task added successfully!", "success");
     }
 
     setDialogOpen(false);
     reset();
   };
 
-  // Filter tasks by search term
-  const filteredTasks = tasks.filter(
+  const filteredTasks = tasks?.filter(
     (task) =>
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
-  // Group tasks based on groupBy state
   const groupedTasks = React.useMemo(() => {
-    if (groupBy === "None") {
-      return { None: filteredTasks };
-    }
-
     const groups: { [key: string]: typeof tasks } = {};
 
-    if (groupBy === "Priority") {
+    if (groupBy === "None") {
+      groups["All Tasks"] = filteredTasks;
+    } else if (groupBy === "Priority") {
       ["Low", "Medium", "High"].forEach((priority) => {
         groups[priority] = filteredTasks.filter((task) => task.priority === priority);
       });
@@ -190,10 +177,21 @@ const Tasks = () => {
       allTags.forEach((tag) => {
         groups[tag] = filteredTasks.filter((task) => task.tags.includes(tag));
       });
+      if (Object.keys(groups).length === 0) {
+        groups["No Tags"] = filteredTasks.filter((task) => task.tags.length === 0);
+      }
     }
 
     return groups;
   }, [filteredTasks, groupBy]);
+
+  if (!tasks) {
+    return (
+      <div className="text-center py-8 text-gray-300 text-lg">
+        No tasks to display
+      </div>
+    );
+  }
 
   return (
     <section className="mb-20" id="tasks">
@@ -212,44 +210,67 @@ const Tasks = () => {
               </button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <button className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 cursor-pointer">
+                  <button
+                    disabled={tasks.length === 0}
+                    className={`rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 ${
+                      tasks.length === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                    }`}
+                  >
                     Delete All
                   </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="bg-[#2D333F] text-white border-gray-600">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-gray-300">
-                      This action will delete <strong>all your tasks</strong> permanently.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        notify("Delete all tasks", "error");
-                        deleteAllTasks();
-                      }}
-                      className="bg-red-600 hover:bg-red-700 cursor-pointer"
-                    >
-                      Yes, Delete All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
+                  {tasks.length === 0 ? (
+                    <>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>No Tasks Available</AlertDialogTitle>
+                        <AlertDialogDescription className="text-gray-300">
+                          There are currently no tasks to delete. Add some tasks to get started.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
+                          Close
+                        </AlertDialogCancel>
+                      </AlertDialogFooter>
+                    </>
+                  ) : (
+                    <>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-gray-300">
+                          This action will delete <strong>all your tasks</strong> permanently.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            notify("All tasks deleted", "error");
+                            deleteAllTasks();
+                          }}
+                          className="bg-red-600 hover:bg-red-700 cursor-pointer"
+                        >
+                          Yes, Delete All
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </>
+                  )}
                 </AlertDialogContent>
               </AlertDialog>
             </div>
           </div>
 
           <TooltipProvider>
-            {Object.keys(groupedTasks).length === 0 ? (
+            {Object.keys(groupedTasks).length === 0 || filteredTasks.length === 0 ? (
               <div className="text-center py-8 text-gray-300 text-lg">
                 No tasks to display
               </div>
             ) : (
-              Object.entries(groupedTasks).map(([group, groupTasks]) => (
-                groupTasks.length > 0 && (
+              Object.entries(groupedTasks).map(([group, groupTasks]) =>
+                groupTasks.length > 0 ? (
                   <div key={group} className="mb-8">
                     <h3 className="text-xl font-semibold text-white mb-4">
                       {groupBy === "Favorites"
@@ -263,32 +284,40 @@ const Tasks = () => {
                     <table className="table-fixed w-full text-white">
                       <thead>
                         <tr className="border-b border-[#2E3443]">
-                          <th className="p-4">★</th>
+                          {groupBy !== "Favorites" && (
+                            <th className="p-4">★</th>
+                          )}
                           <th className="p-4 text-left">Title</th>
                           <th className="p-4 text-left">Description</th>
-                          <th className="p-4 text-left">Tags</th>
-                          <th className="p-4 text-center">Priority</th>
+                          {groupBy !== "Tags" && (
+                            <th className="p-4 text-left">Tags</th>
+                          )}
+                          {groupBy !== "Priority" && (
+                            <th className="p-4 text-center">Priority</th>
+                          )}
                           <th className="p-4 text-center">Options</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {groupTasks.map((task, index) => (
-                          <tr key={index} className="border-b border-[#2E3443]">
-                            <td className="text-center">
-                              <svg
-                                onClick={() => toggleStar(tasks.indexOf(task))}
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="cursor-pointer"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                strokeWidth="2"
-                                stroke={task.starred ? "yellow" : "currentColor"}
-                                fill={task.starred ? "yellow" : "none"}
-                              >
-                                <path d="M12 17.75l-6.172 3.245l1.179-6.873l-5-4.867l6.9-1L12 2l3.086 6.255l6.9 1l-5 4.867l1.179 6.873z" />
-                              </svg>
-                            </td>
+                        {groupTasks.map((task) => (
+                          <tr key={task.id} className="border-b border-[#2E3443]">
+                            {groupBy !== "Favorites" && (
+                              <td className="text-center">
+                                <svg
+                                  onClick={() => toggleStar(task.id)}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="cursor-pointer"
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth="2"
+                                  stroke={task.starred ? "yellow" : "currentColor"}
+                                  fill={task.starred ? "yellow" : "none"}
+                                >
+                                  <path d="M12 17.75l-6.172 3.245l1.179-6.873l-5-4.867l6.9-1L12 2l3.086 6.255l6.9 1l-5 4.867l1.179 6.873z" />
+                                </svg>
+                              </td>
+                            )}
                             <td className="p-4 truncate max-w-[100px]">
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -309,31 +338,35 @@ const Tasks = () => {
                                 </TooltipContent>
                               </Tooltip>
                             </td>
-                            <td>
-                              <ul className="flex flex-wrap gap-1.5">
-                                {task.tags.map((tag, i) => (
-                                  <li key={i}>
-                                    <span
-                                      className={`inline-block rounded px-2 py-0.5 text-sm text-white ${task.tagColors[i]}`}
-                                    >
-                                      {tag}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </td>
-                            <td className="text-center">{task.priority}</td>
+                            {groupBy !== "Tags" && (
+                              <td>
+                                <ul className="flex flex-wrap gap-1.5">
+                                  {task.tags.map((tag, i) => (
+                                    <li key={i}>
+                                      <span
+                                        className={`inline-block rounded px-2 py-0.5 text-sm text-white ${task.tagColors[i]}`}
+                                      >
+                                        {tag}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </td>
+                            )}
+                            {groupBy !== "Priority" && (
+                              <td className="text-center">{task.priority}</td>
+                            )}
                             <td className="text-center">
                               <div className="flex justify-center gap-3">
                                 <button
                                   className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
-                                  onClick={() => openViewDialog(tasks.indexOf(task))}
+                                  onClick={() => openViewDialog(task.id)}
                                 >
                                   <Eye />
                                 </button>
                                 <button
                                   className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
-                                  onClick={() => openEditDialog(tasks.indexOf(task))}
+                                  onClick={() => openEditDialog(task.id)}
                                 >
                                   <FilePenLine />
                                 </button>
@@ -356,8 +389,8 @@ const Tasks = () => {
                                       </AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => {
-                                          notify("Delete single task!", "error");
-                                          deleteTask(tasks.indexOf(task));
+                                          notify("Task deleted!", "error");
+                                          deleteTask(task.id);
                                         }}
                                         className="bg-red-600 hover:bg-red-700 cursor-pointer"
                                       >
@@ -373,24 +406,22 @@ const Tasks = () => {
                       </tbody>
                     </table>
                   </div>
-                )
-              ))
+                ) : null
+              )
             )}
           </TooltipProvider>
 
-          {/* Edit/Add Task Dialog */}
           <TaskDetailsDialog
             open={viewDialogOpen}
             onOpenChange={setViewDialogOpen}
-            task={viewingIndex !== null ? tasks[viewingIndex] : null}
+            task={viewingTaskId !== null ? getTaskById(viewingTaskId) || null : null}
           />
 
-          {/* View Task Details Dialog */}
           <AddEditTaskDialog
             dialogOpen={dialogOpen}
             setDialogOpen={setDialogOpen}
             isEditing={isEditing}
-            editingIndex={editingIndex}
+            editingTaskId={editingTaskId}
             tasks={tasks}
             editTask={editTask}
             addTask={addTask}
