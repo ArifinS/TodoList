@@ -1,55 +1,54 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { taskSchema, TaskFormData } from "./TaskValidation";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ToastContainer, toast } from "react-toastify";
-import { DatePicker } from "./date-picker";
+import React, { useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { taskSchema, TaskFormData } from "./TaskValidation"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { ToastContainer, toast } from "react-toastify"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import "react-toastify/dist/ReactToastify.css";
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react"
+import { DatePicker } from "./DatePicker"
+import "react-toastify/dist/ReactToastify.css"
 
-// Notify function
 const notify = (message: string, type: "success" | "error" = "success") => {
   switch (type) {
     case "success":
-      toast.success(message, { theme: "dark" });
-      break;
+      toast.success(message, { theme: "dark" })
+      break
     case "error":
-      toast.error(message, { theme: "dark" });
-      break;
+      toast.error(message, { theme: "dark" })
+      break
     default:
-      toast(message, { theme: "dark" });
+      toast(message, { theme: "dark" })
   }
-};
+}
 
 interface Task {
-  id: string;
-  title: string;
-  description: string;
-  tags: string[];
-  tagColors: string[];
-  priority: string;
-  starred: boolean;
-  dueDate?: Date | null;
+  id: string
+  title: string
+  description: string
+  tags: string[]
+  tagColors: string[]
+  priority: string
+  starred: boolean
+  dueDate?: Date | null
 }
 
 interface AddEditTaskDialogProps {
-  dialogOpen: boolean;
-  setDialogOpen: (open: boolean) => void;
-  isEditing: boolean;
-  editingTaskId: string | null;
-  tasks: Task[];
+  dialogOpen: boolean
+  setDialogOpen: (open: boolean) => void
+  isEditing: boolean
+  editingTaskId: string | null
+  tasks: Task[]
   editTask: (
     id: string,
     title: string,
@@ -57,8 +56,8 @@ interface AddEditTaskDialogProps {
     tags: string[],
     priority: string,
     dueDate?: Date | null
-  ) => void;
-  addTask: (data: TaskFormData) => void;
+  ) => void
+  addTask: (data: TaskFormData) => void
 }
 
 const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
@@ -87,19 +86,17 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
       priority: "Medium",
       dueDate: null,
     },
-  });
-
-  const [open, setOpen] = useState(false);
+  })
 
   useEffect(() => {
     if (isEditing && editingTaskId) {
-      const currentTask = tasks.find((task) => task.id === editingTaskId);
+      const currentTask = tasks.find((task) => task.id === editingTaskId)
       if (currentTask) {
-        setValue("title", currentTask.title);
-        setValue("description", currentTask.description);
-        setValue("tags", currentTask.tags.join(","));
-        setValue("priority", currentTask.priority);
-        setValue("dueDate", currentTask.dueDate || null);
+        setValue("title", currentTask.title)
+        setValue("description", currentTask.description)
+        setValue("tags", currentTask.tags.join(","))
+        setValue("priority", currentTask.priority)
+        setValue("dueDate", currentTask.dueDate || null)
       }
     } else {
       reset({
@@ -108,34 +105,39 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
         tags: "",
         priority: "Medium",
         dueDate: null,
-      });
+      })
     }
-  }, [isEditing, editingTaskId, tasks, setValue, reset]);
+  }, [isEditing, editingTaskId, tasks, setValue, reset])
 
   const onSubmit = (data: TaskFormData) => {
-    const formattedData = {
-      ...data,
-      tags: data.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-    };
+    try {
+      const formattedData = {
+        ...data,
+        tags: data.tags ? data.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : [],
+      }
 
-    if (isEditing && editingTaskId) {
-      editTask(
-        editingTaskId,
-        formattedData.title,
-        formattedData.description,
-        formattedData.tags,
-        formattedData.priority,
-        formattedData.dueDate
-      );
-      notify("Successfully updated task!", "success");
-    } else {
-      addTask(formattedData);
-      notify("Successfully added task!", "success");
+      if (isEditing && editingTaskId) {
+        editTask(
+          editingTaskId,
+          formattedData.title,
+          formattedData.description,
+          formattedData.tags,
+          formattedData.priority,
+          formattedData.dueDate
+        )
+        notify("Successfully updated task!", "success")
+      } else {
+        addTask(formattedData)
+        notify("Successfully added task!", "success")
+      }
+
+      setDialogOpen(false)
+      reset()
+    } catch (error) {
+      console.error("Form submission error:", error)
+      notify("Failed to process task", "error")
     }
-
-    setDialogOpen(false);
-    reset();
-  };
+  }
 
   return (
     <>
@@ -186,20 +188,11 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
             <div>
               <Label className="block mb-1 text-sm font-medium text-gray-300">Due Date</Label>
               <div className="flex items-center gap-2">
-                <Controller
+                <DatePicker
                   control={control}
                   name="dueDate"
-                  render={({ field }) => (
-                    <DatePicker
-                      selected={field.value}
-                      onChange={(date) => {
-                        field.onChange(date);
-                        setOpen(false); // Close Popover after selection
-                      }}
-                      placeholderText="Select due date"
-                      className="w-full px-4 py-2.5 rounded-lg bg-[#2D333F] text-white border border-gray-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 outline-none transition-all duration-200 placeholder-gray-500"
-                    />
-                  )}
+                  label=""
+                  placeholder="Select due date"
                 />
                 {watch("dueDate") && (
                   <Button
@@ -251,7 +244,7 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
       </Dialog>
       <ToastContainer theme="dark" position="bottom-right" />
     </>
-  );
-};
+  )
+}
 
-export default AddEditTaskDialog;
+export default AddEditTaskDialog
