@@ -36,7 +36,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="sm:max-w-5xl text-center bg-gradient-to-br from-[#1D212B] to-[#2A2F3B] text-white rounded-2xl shadow-2xl p-8 border border-gray-700/50"
-        style={{ width: "1200px", height: "800px" }}
+        style={{ width: "1200px", height: "500px" }}
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight text-white text-center">
