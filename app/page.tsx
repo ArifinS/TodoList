@@ -3,7 +3,6 @@ import Head from 'next/head';
 // import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Footer from './components/Footer';
-import { TaskProvider } from "./components/TaskProvider";
 import Tasks from "./components/Tasks";
 export default function Home() {
   return (
@@ -21,9 +20,7 @@ export default function Home() {
     </Head>
     {/* <Navbar /> */}
     <Hero />
-    <TaskProvider>
       <Tasks />
-    </TaskProvider>
     <Footer />
   </div>
   );

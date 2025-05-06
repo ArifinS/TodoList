@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useTaskContext } from "./TaskContext"
+import { useTaskStore } from "./taskStore" 
 
 const Tasks = () => {
   const {
@@ -30,7 +30,7 @@ const Tasks = () => {
     deleteAllTasks,
     editTask,
     toggleStar,
-  } = useTaskContext()
+  } = useTaskStore() // Use Zustand hook instead of useTaskContext
 
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [viewDialogOpen, setViewDialogOpen] = React.useState(false)
@@ -40,12 +40,8 @@ const Tasks = () => {
   const [groupBy, setGroupBy] = React.useState<string>("None")
 
   const {
-    register,
-    handleSubmit,
     setValue,
-    watch,
     reset,
-    formState: { errors },
   } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
@@ -85,6 +81,29 @@ const Tasks = () => {
     setDialogOpen(true)
   }
 
+  const onSubmit = (data: TaskFormData) => {
+    const formattedData = {
+      ...data,
+      tags: data.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+    }
+
+    if (isEditing && editingTaskId !== null) {
+      editTask(
+        editingTaskId,
+        formattedData.title,
+        formattedData.description,
+        formattedData.tags,
+        formattedData.priority
+      )
+      notify("Task updated successfully!", "success")
+    } else {
+      addTask(formattedData)
+      notify("Task added successfully!", "success")
+    }
+
+    setDialogOpen(false)
+    reset()
+  }
 
   const filteredTasks = tasks.filter((task) => {
     const title = task.title ?? ""
@@ -140,9 +159,9 @@ const Tasks = () => {
               >
                 Add Task
               </button>
-                <CustomAlertDialog
-                  trigger={
-                    <button
+              <CustomAlertDialog
+                trigger={
+                  <button
                     disabled={tasks.length === 0}
                     className={`rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 ${
                       tasks.length === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
@@ -150,15 +169,15 @@ const Tasks = () => {
                   >
                     Delete All Tasks
                   </button>
-                  }
-                  title="Are you absolutely sure?"
-                  description="This action will delete all tasks permanently."
-                  actionText="Yes, Delete All"
-                  onAction={() => {
-                    notify("All tasks deleted", "error")
-                    deleteAllTasks();
-                  }}
-                />
+                }
+                title="Are you absolutely sure?"
+                description="This action will delete all tasks permanently."
+                actionText="Yes, Delete All"
+                onAction={() => {
+                  notify("All tasks deleted", "error")
+                  deleteAllTasks();
+                }}
+              />
             </div>
           </div>
 
@@ -294,7 +313,6 @@ const Tasks = () => {
               )
             )}
           </TooltipProvider>
-
           <TaskDetailsDialog
             open={viewDialogOpen}
             onOpenChange={setViewDialogOpen}
