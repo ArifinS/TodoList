@@ -1,47 +1,26 @@
-"use client";
-import React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { taskSchema, TaskFormData } from "./TaskValidation";
+"use client"
 
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
+import React from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { taskSchema, TaskFormData } from "./TaskValidation"
+import { Trash2, FilePenLine, Eye } from "lucide-react"
+import TaskDetailsDialog from "./shared/TaskDetailsDialog"
+import AddEditTaskDialog from "./shared/AddEditTaskDialog"
+import Gropingdropdown from "./shared/Gropingdropdown"
+import { CustomAlertDialog } from "./shared/CustomAlertDialog"
+import SearchStream from "./Searchtream"
+import "react-toastify/dist/ReactToastify.css"
+import { notify } from "./helper/notify"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
+import { useTaskContext } from "./TaskContext"
 
-import { useTaskContext } from "./TaskContext";
-
-const Tasks: React.FC = () => {
+const Tasks = () => {
   const {
     tasks,
     searchTerm,
@@ -51,11 +30,14 @@ const Tasks: React.FC = () => {
     deleteAllTasks,
     editTask,
     toggleStar,
-  } = useTaskContext();
+  } = useTaskContext()
 
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = React.useState(false)
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [editingTaskId, setEditingTaskId] = React.useState<string | null>(null)
+  const [viewingTaskId, setViewingTaskId] = React.useState<string | null>(null)
+  const [groupBy, setGroupBy] = React.useState<string>("None")
 
   const {
     register,
@@ -72,273 +54,266 @@ const Tasks: React.FC = () => {
       tags: "",
       priority: "Medium",
     },
-  });
+  })
 
-  const openEditDialog = (index: number) => {
-    const task = tasks[index];
-    setValue("title", task.title);
-    setValue("description", task.description);
-    setValue("tags", task.tags.join(","));
-    setValue("priority", task.priority);
-    setIsEditing(true);
-    setEditingIndex(index);
-    setDialogOpen(true);
-  };
+  const getTaskById = (id: string) => {
+    return tasks?.find((task) => task.id === id) || null
+  }
+
+  const openEditDialog = (id: string) => {
+    const task = getTaskById(id)
+    if (task) {
+      setValue("title", task.title)
+      setValue("description", task.description)
+      setValue("tags", task.tags.join(","))
+      setValue("priority", task.priority)
+      setIsEditing(true)
+      setEditingTaskId(id)
+      setDialogOpen(true)
+    }
+  }
+
+  const openViewDialog = (id: string) => {
+    setViewingTaskId(id)
+    setViewDialogOpen(true)
+  }
 
   const openAddDialog = () => {
-    reset();
-    setIsEditing(false);
-    setEditingIndex(null);
-    setDialogOpen(true);
-  };
+    reset()
+    setIsEditing(false)
+    setEditingTaskId(null)
+    setDialogOpen(true)
+  }
 
-  const onSubmit = (data: TaskFormData) => {
-    const formattedData = {
-      ...data,
-      tags: data.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-    };
 
-    if (isEditing && editingIndex !== null) {
-      editTask(
-        editingIndex,
-        formattedData.title,
-        formattedData.description,
-        formattedData.tags,
-        formattedData.priority
-      );
-    } else {
-      addTask(formattedData);
+  const filteredTasks = tasks.filter((task) => {
+    const title = task.title ?? ""
+    const search = searchTerm ?? ""
+    return title.toLowerCase().includes(search.toLowerCase())
+  })
+
+  const groupedTasks = React.useMemo(() => {
+    const groups: { [key: string]: typeof tasks } = {}
+
+    if (groupBy === "None") {
+      groups["All Tasks"] = filteredTasks
+    } else if (groupBy === "Priority") {
+      ;["Low", "Medium", "High"].forEach((priority) => {
+        groups[priority] = filteredTasks.filter((task) => task.priority === priority)
+      })
+    } else if (groupBy === "Favorites") {
+      groups["Starred"] = filteredTasks.filter((task) => task.starred)
+      groups["Not Starred"] = filteredTasks.filter((task) => !task.starred)
+    } else if (groupBy === "Tags") {
+      const allTags = new Set(filteredTasks.flatMap((task) => task.tags))
+      allTags.forEach((tag) => {
+        groups[tag] = filteredTasks.filter((task) => task.tags.includes(tag))
+      })
+      if (Object.keys(groups).length === 0) {
+        groups["No Tags"] = filteredTasks.filter((task) => task.tags.length === 0)
+      }
     }
 
-    setDialogOpen(false);
-    reset();
-  };
+    return groups
+  }, [filteredTasks, groupBy])
 
-  const filteredTasks = tasks.filter(
-    (task) =>
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  if (!tasks) {
+    return (
+      <div className="text-center py-8 text-gray-300 text-lg">
+        No tasks to display
+      </div>
+    )
+  }
 
   return (
     <section className="mb-20" id="tasks">
       <div className="container mx-auto">
         <div className="rounded-xl border border-[rgba(206,206,206,0.12)] bg-[#1D212B] px-6 py-8 md:px-9 md:py-16">
           <div className="mb-14 items-center justify-between sm:flex">
-            <h2 className="text-2xl font-semibold max-sm:mb-4">Your Tasks</h2>
+            <h2 className="text-2xl font-semibold text-white max-sm:mb-4">Your Tasks</h2>
             <div className="flex items-center space-x-5">
-              <div className="relative overflow-hidden rounded-lg text-gray-50 md:min-w-[380px] lg:min-w-[440px]">
-                <input
-                  type="search"
-                  className="z-20 block w-full bg-gray-800 px-4 py-2 pr-10 focus:outline-none"
-                  placeholder="Search by description"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <div className="absolute right-2 top-0 h-full flex items-center pr-2 text-white md:right-4">
-                  <svg
-                    className="h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                    />
-                  </svg>
-                </div>
-              </div>
+              <Gropingdropdown groupBy={groupBy} setGroupBy={setGroupBy} />
+              <SearchStream searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
               <button
                 onClick={openAddDialog}
-                className="rounded-md bg-blue-500 px-3.5 py-2.5 text-sm font-semibold cursor-pointer"
+                className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 cursor-pointer"
               >
                 Add Task
               </button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button className="rounded-md bg-red-500 px-3.5 py-2.5 text-sm font-semibold cursor-pointer">
-                    Delete All
+                <CustomAlertDialog
+                  trigger={
+                    <button
+                    disabled={tasks.length === 0}
+                    className={`rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 ${
+                      tasks.length === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                    }`}
+                  >
+                    Delete All Tasks
                   </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action will delete <strong>all your tasks</strong> permanently.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={deleteAllTasks}>
-                      Yes, Delete All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                  }
+                  title="Are you absolutely sure?"
+                  description="This action will delete all tasks permanently."
+                  actionText="Yes, Delete All"
+                  onAction={() => {
+                    notify("All tasks deleted", "error")
+                    deleteAllTasks();
+                  }}
+                />
             </div>
           </div>
 
-          <table className="table-fixed w-full">
-            <thead>
-              <tr>
-                <th className="p-4">★</th>
-                <th className="p-4 text-left">Title</th>
-                <th className="p-4 text-left">Description</th>
-                <th className="p-4 text-left">Tags</th>
-                <th className="p-4 text-center">Priority</th>
-                <th className="p-4 text-center">Options</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTasks.map((task, index) => (
-                <tr key={index} className="border-b border-[#2E3443]">
-                  <td className="text-center">
-                    <svg
-                      onClick={() => toggleStar(index)}
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="cursor-pointer"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      strokeWidth="2"
-                      stroke={task.starred ? "yellow" : "currentColor"}
-                      fill={task.starred ? "yellow" : "none"}
-                    >
-                      <path d="M12 17.75l-6.172 3.245l1.179-6.873l-5-4.867l6.9-1L12 2l3.086 6.255l6.9 1l-5 4.867l1.179 6.873z" />
-                    </svg>
-                  </td>
-                  <td className="p-4 truncate max-w-[100px]">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-default">{task.title}</span>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-[#1D212B] text-white border border-gray-600 rounded-md p-2 max-w-xs">
-                        <p>{task.title}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </td>
-                  <td className="p-4 truncate max-w-[300px]">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-default">{task.description}</span>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-[#1D212B] text-white border border-gray-600 rounded-md p-2 max-w-xs">
-                        <p>{task.description}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </td>
-                  <td>
-                    <ul className="flex flex-wrap gap-1.5">
-                      {task.tags.map((tag, i) => (
-                        <li key={i}>
-                          <span
-                            className={`inline-block rounded px-2 py-0.5 text-sm bg-blue-700 text-white`}
-                          >
-                            {tag}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                  <td className="text-center">{task.priority}</td>
-                  <td className="text-center">
-                    <div className="flex justify-center gap-3">
-                      <button
-                        className="text-blue-500 cursor-pointer"
-                        onClick={() => openEditDialog(index)}
-                      >
-                        Edit
-                      </button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <button className="text-red-500 cursor-pointer">Delete</button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This task will be deleted permanently.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteTask(index)}>
-                              Yes, Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <TooltipProvider>
+            {Object.keys(groupedTasks).length === 0 || filteredTasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-300 text-lg">
+                No tasks to display
+              </div>
+            ) : (
+              Object.entries(groupedTasks).map(([group, groupTasks]) =>
+                groupTasks.length > 0 ? (
+                  <div key={group} className="mb-8">
+                    <h3 className="text-xl font-semibold text-white mb-4">
+                      {groupBy === "Favorites"
+                        ? group
+                        : groupBy === "Priority"
+                        ? `Priority: ${group}`
+                        : groupBy === "Tags"
+                        ? `Tag: ${group}`
+                        : ""}
+                    </h3>
+                    <table className="table-fixed w-full text-white">
+                      <thead>
+                        <tr className="border-b border-[#2E3443]">
+                          {groupBy !== "Favorites" && (
+                            <th className="p-4">★</th>
+                          )}
+                          <th className="p-4 text-left">Title</th>
+                          <th className="p-4 text-left">Description</th>
+                          {groupBy !== "Tags" && (
+                            <th className="p-4 text-left">Tags</th>
+                          )}
+                          {groupBy !== "Priority" && (
+                            <th className="p-4 text-center">Priority</th>
+                          )}
+                          <th className="p-4 text-center">Options</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupTasks.map((task) => (
+                          <tr key={task.id} className="border-b border-[#2E3443]">
+                            {groupBy !== "Favorites" && (
+                              <td className="text-center">
+                                <svg
+                                  onClick={() => toggleStar(task.id)}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="cursor-pointer"
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth="2"
+                                  stroke={task.starred ? "yellow" : "currentColor"}
+                                  fill={task.starred ? "yellow" : "none"}
+                                >
+                                  <path d="M12 17.75l-6.172 3.245l1.179-6.873l-5-4.867l6.9-1L12 2l3.086 6.255l6.9 1l-5 4.867l1.179 6.873z" />
+                                </svg>
+                              </td>
+                            )}
+                            <td className="p-4 truncate max-w-[100px]">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-default">{task.title}</span>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-[#2D333F] text-white border-gray-600">
+                                  <p>{task.title}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                            <td className="p-4 truncate max-w-[300px]">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-default">{task.description}</span>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-[#2D333F] text-white border-gray-600">
+                                  <p style={{ width: "400px" }}>{task.description}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                            {groupBy !== "Tags" && (
+                              <td>
+                                <ul className="flex flex-wrap gap-1.5">
+                                  {task.tags.map((tag, i) => (
+                                    <li key={i}>
+                                      <span
+                                        className={`inline-block rounded px-2 py-0.5 text-sm text-white ${task.tagColors[i]}`}
+                                      >
+                                        {tag}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </td>
+                            )}
+                            {groupBy !== "Priority" && (
+                              <td className="text-center">{task.priority}</td>
+                            )}
+                            <td className="text-center">
+                              <div className="flex justify-center gap-3">
+                                <button
+                                  className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
+                                  onClick={() => openViewDialog(task.id)}
+                                >
+                                  <Eye />
+                                </button>
+                                <button
+                                  className="text-blue-500 hover:text-blue-400 transition-colors duration-200 cursor-pointer"
+                                  onClick={() => openEditDialog(task.id)}
+                                >
+                                  <FilePenLine />
+                                </button>
+                                <CustomAlertDialog
+                                  trigger={
+                                    <button className="text-red-500 hover:text-red-400 transition-colors duration-200 cursor-pointer">
+                                      <Trash2 />
+                                    </button>
+                                  }
+                                  title="Are you absolutely sure?"
+                                  description="This task will be deleted permanently."
+                                  actionText="Yes, Delete"
+                                  onAction={() => {
+                                    notify("Task deleted!", "error");
+                                    deleteTask(task.id);
+                                  }}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : null
+              )
+            )}
+          </TooltipProvider>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="bg-[#1D212B] text-white">
-              <DialogHeader>
-                <DialogTitle>{isEditing ? "Edit Task" : "Add New Task"}</DialogTitle>
-                <DialogDescription>Fill the form below.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
-                <div>
-                  <label className="block mb-1 text-sm">Title</label>
-                  <input
-                    {...register("title")}
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 text-white"
-                  />
-                  {errors.title && (
-                    <p className="text-red-500 text-sm">{errors.title.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block mb-1 text-sm">Description</label>
-                  <textarea
-                    {...register("description")}
-                    className="h-[100px] w-full px-3 py-2 rounded-md bg-gray-800 text-white"
-                  />
-                  {errors.description && (
-                    <p className="text-red-500 text-sm">{errors.description.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block mb-1 text-sm">Tags (comma-separated)</label>
-                  <input
-                    {...register("tags")}
-                    className="w-full px-3 py-2 rounded-md bg-gray-800 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 text-sm">Priority</label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="w-full px-3 py-2 text-left rounded-md bg-gray-800 text-white">
-                      {watch("priority") || "Select Priority"}
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-gray-800 border border-gray-700 text-white">
-                      <DropdownMenuItem onSelect={() => setValue("priority", "Medium")}>
-                        Medium
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setValue("priority", "High")}>
-                        High
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <button type="submit" className="bg-green-600 px-4 py-2 rounded-md text-white">
-                  {isEditing ? "Confirm Edit" : "Confirm Add Task"}
-                </button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <TaskDetailsDialog
+            open={viewDialogOpen}
+            onOpenChange={setViewDialogOpen}
+            task={viewingTaskId !== null ? getTaskById(viewingTaskId) || null : null}
+          />
+
+          <AddEditTaskDialog
+            dialogOpen={dialogOpen}
+            setDialogOpen={setDialogOpen}
+            isEditing={isEditing}
+            editingTaskId={editingTaskId}
+            tasks={tasks}
+            editTask={editTask}
+            addTask={addTask}
+          />
         </div>
       </div>
     </section>
-  );
-};
+  )
+}
 
-export default Tasks;
+export default Tasks
