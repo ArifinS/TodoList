@@ -31,7 +31,6 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
   task,
 }) => {
   if (!task) return null;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -99,3 +98,7 @@ const TaskDetailsDialog: React.FC<TaskDetailsDialogProps> = ({
 };
 
 export default TaskDetailsDialog;
+
+
+
+

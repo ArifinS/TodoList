@@ -5,7 +5,6 @@ import Hero from './components/Hero';
 import Footer from './components/Footer';
 import { TaskProvider } from "./components/TaskProvider";
 import Tasks from "./components/Tasks";
-import { DatePickerForm } from "./components/test";
 export default function Home() {
   return (
     <div className="bg-[#191D26] font-inter text-white min-h-screen">
@@ -25,8 +24,6 @@ export default function Home() {
     <TaskProvider>
       <Tasks />
     </TaskProvider>
-
-    <DatePickerForm />
     <Footer />
   </div>
   );

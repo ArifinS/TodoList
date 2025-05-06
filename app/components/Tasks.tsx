@@ -5,24 +5,13 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { taskSchema, TaskFormData } from "./TaskValidation"
 import { Trash2, FilePenLine, Eye } from "lucide-react"
-import { cn } from "@/lib/utils"
-import TaskDetailsDialog from "./TaskDetailsDialog"
-import AddEditTaskDialog from "./AddEditTaskDialog"
-import Gropingdropdown from "./Gropingdropdown"
+import TaskDetailsDialog from "./shared/TaskDetailsDialog"
+import AddEditTaskDialog from "./shared/AddEditTaskDialog"
+import Gropingdropdown from "./shared/Gropingdropdown"
+import { CustomAlertDialog } from "./shared/CustomAlertDialog"
 import SearchStream from "./Searchtream"
-import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog"
+import { notify } from "./helper/notify"
 import {
   Tooltip,
   TooltipContent,
@@ -30,40 +19,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useTaskContext } from "./TaskContext"
-
-const notify = (message: string, type: "success" | "error" = "success") => {
-  switch (type) {
-    case "success":
-      toast.success(message, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      })
-      break
-    case "error":
-      toast.error(message, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      })
-      break
-    default:
-      toast(message, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      })
-  }
-}
 
 const Tasks = () => {
   const {
@@ -130,29 +85,6 @@ const Tasks = () => {
     setDialogOpen(true)
   }
 
-  const onSubmit = (data: TaskFormData) => {
-    const formattedData = {
-      ...data,
-      tags: data.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-    }
-
-    if (isEditing && editingTaskId !== null) {
-      editTask(
-        editingTaskId,
-        formattedData.title,
-        formattedData.description,
-        formattedData.tags,
-        formattedData.priority
-      )
-      notify("Task updated successfully!", "success")
-    } else {
-      addTask(formattedData)
-      notify("Task added successfully!", "success")
-    }
-
-    setDialogOpen(false)
-    reset()
-  }
 
   const filteredTasks = tasks.filter((task) => {
     const title = task.title ?? ""
@@ -208,58 +140,25 @@ const Tasks = () => {
               >
                 Add Task
               </button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button
+                <CustomAlertDialog
+                  trigger={
+                    <button
                     disabled={tasks.length === 0}
                     className={`rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 ${
                       tasks.length === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                     }`}
                   >
-                    Delete All
+                    Delete All Tasks
                   </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="bg-[#2D333F] text-white border-gray-600">
-                  {tasks.length === 0 ? (
-                    <>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>No Tasks Available</AlertDialogTitle>
-                        <AlertDialogDescription className="text-gray-300">
-                          There are currently no tasks to delete. Add some tasks to get started.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
-                          Close
-                        </AlertDialogCancel>
-                      </AlertDialogFooter>
-                    </>
-                  ) : (
-                    <>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-gray-300">
-                          This action will delete <strong>all your tasks</strong> permanently.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
-                          Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => {
-                            notify("All tasks deleted", "error")
-                            deleteAllTasks()
-                          }}
-                          className="bg-red-600 hover:bg-red-700 cursor-pointer"
-                        >
-                          Yes, Delete All
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </>
-                  )}
-                </AlertDialogContent>
-              </AlertDialog>
+                  }
+                  title="Are you absolutely sure?"
+                  description="This action will delete all tasks permanently."
+                  actionText="Yes, Delete All"
+                  onAction={() => {
+                    notify("All tasks deleted", "error")
+                    deleteAllTasks();
+                  }}
+                />
             </div>
           </div>
 
@@ -370,35 +269,20 @@ const Tasks = () => {
                                 >
                                   <FilePenLine />
                                 </button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
+                                <CustomAlertDialog
+                                  trigger={
                                     <button className="text-red-500 hover:text-red-400 transition-colors duration-200 cursor-pointer">
                                       <Trash2 />
                                     </button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="bg-[#2D333F] text-white border-gray-600">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                      <AlertDialogDescription className="text-gray-300">
-                                        This task will be deleted permanently.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600 cursor-pointer">
-                                        Cancel
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => {
-                                          notify("Task deleted!", "error")
-                                          deleteTask(task.id)
-                                        }}
-                                        className="bg-red-600 hover:bg-red-700 cursor-pointer"
-                                      >
-                                        Yes, Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                  }
+                                  title="Are you absolutely sure?"
+                                  description="This task will be deleted permanently."
+                                  actionText="Yes, Delete"
+                                  onAction={() => {
+                                    notify("Task deleted!", "error");
+                                    deleteTask(task.id);
+                                  }}
+                                />
                               </div>
                             </td>
                           </tr>
@@ -428,7 +312,6 @@ const Tasks = () => {
           />
         </div>
       </div>
-      <ToastContainer />
     </section>
   )
 }

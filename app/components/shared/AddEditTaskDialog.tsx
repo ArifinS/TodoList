@@ -4,7 +4,7 @@ import React, { useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { taskSchema } from "./TaskValidation"
+import { taskSchema } from "../TaskValidation"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ToastContainer, toast } from "react-toastify"
@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import "react-toastify/dist/ReactToastify.css"
-import { DatePickerForm } from "./DatePicker"
+import { DatePickerForm } from "../DatePicker"
 import { Form } from "@/components/ui/form"
 
 // Infer the form data type from the schema
@@ -230,7 +230,7 @@ const AddEditTaskDialog: React.FC<AddEditTaskDialogProps> = ({
                 <Label className="block mb-2 text-sm font-medium text-gray-300">Priority</Label>
                 <RadioGroup
                   value={watch("priority")}
-                  onValueChange={(value) => setValue("priority", value)}
+                  onValueChange={(value) => setValue("priority")}
                   className="flex space-x-4"
                 >
                   {["Low", "Medium", "High"].map((level) => (
