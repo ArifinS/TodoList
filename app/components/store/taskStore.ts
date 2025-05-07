@@ -91,7 +91,7 @@ export const useTaskStore = create<TaskStore>((set) => ({
         "Integrate a web API with a third-party database using secure methods, focusing on seamless data exchange and data integrity.",
       tags: ["Web", "Python", "Security"],
       tagColors: ["bg-[#2F43F8BF]", "bg-[#AE6D0BDB]", "bg-[#10FBEDB2]"],
-      priority: "Low",
+      priority: "Low", 
       starred: false,
     },
   ],

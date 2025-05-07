@@ -1,6 +1,6 @@
 const Hero: React.FC = () => {
   return (
-    <section className="flex items-center justify-center py-20">
+    <section className="flex items-center justify-center">
       <div className="container px-4">
         <div className="grid items-center gap-6 md:grid-cols-2">
           <div className="flex justify-center md:order-2">
@@ -22,7 +22,7 @@ const Hero: React.FC = () => {
             </p>
           </div>
         </div>
-      </div>
+      </div>  
     </section>
   );
 };
